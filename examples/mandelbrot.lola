@@ -1,0 +1,65 @@
+Print("Hello World");
+var width = 200;
+var height = 200;
+InitWindow(width, height, "Madndelbrot Set from LoLa+Raylib!");
+SetWindowState(["window_resizable"]);
+SetTargetFPS(60);
+var res=16;
+var maxIt = 16;
+var maxVal = 16;
+while (not WindowShouldClose()) {
+    if (IsKey1Pressed()) res+=1;
+    if (IsKey2Pressed()) maxIt+=1;
+    var range = Range(res);
+    width = GetRenderWidth();
+    height = GetRenderHeight();
+    var stepX = Ceiling(width/res);
+    var stepY = Ceiling(height/res);
+    var color_step = (256/res);
+
+    var w = res;
+    var h = (w * height) / width;
+
+    //customizable(use to pan around)
+    // var xMin = (-w / 2);
+    // var yMin = (-h / 2);
+    // var xMax = (xMin + w);
+    // var yMax = (yMin + h);
+    var xMin = -1;
+    var yMin = -1;
+    var xMax = 1;
+    var yMax = 1;
+
+    var dx = (xMax - xMin)/w;
+    var dy = (yMax - yMin)/h;
+    var itToColor = Floor(255/maxIt);
+    BeginDrawing();
+    var x = xMin;
+    for (xStep in range) {
+        var y = yMin;
+        for (yStep in range) {
+            //teset
+            var a = x;
+            var b = y;
+            var it = 0;
+            while (it < maxIt) {
+                var aSq = Pow(a,2);
+                var bSq = Pow(b,2);
+                var twoAB = 2 * a * b;
+                a = aSq - bSq + x;
+                b = twoAB + y;
+
+                if (Sqrt(aSq+bSq) > maxVal) {
+                    break;
+                }
+
+                it+=1;
+            }
+            
+            DrawRectangle(xStep*stepX,yStep*stepY,stepX,stepY,0,it*itToColor,0,255);
+            y+=dy;
+        }
+        x+=dx;
+    }
+    EndDrawing();
+}

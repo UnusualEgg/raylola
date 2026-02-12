@@ -9,7 +9,11 @@ pub fn build(b: *std.Build) void {
     //     .target = target,
     // });
     const lola = b.dependency("lola", .{ .target = target, .optimize = optimize });
-    const raylib = b.dependency("raylib_zig", .{ .target = target, .optimize = optimize });
+    const raylib = b.dependency("raylib_zig", .{
+        .target = target,
+        .optimize = optimize,
+        .linux_display_backend = .Wayland,
+    });
 
     const exe = b.addExecutable(.{
         .name = "raylola",
@@ -19,6 +23,7 @@ pub fn build(b: *std.Build) void {
             .optimize = optimize,
             .imports = &.{},
         }),
+        .use_lld = false,
     });
     exe.root_module.addImport("lola", lola.module("lola"));
     exe.root_module.addImport("raylib", raylib.module("raylib"));
@@ -28,6 +33,8 @@ pub fn build(b: *std.Build) void {
     const run_step = b.step("run", "Run the app");
 
     const run_cmd = b.addRunArtifact(exe);
+    if (b.args) |args|
+        run_cmd.addArgs(args);
     run_step.dependOn(&run_cmd.step);
 
     run_cmd.step.dependOn(b.getInstallStep());

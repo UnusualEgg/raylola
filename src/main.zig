@@ -23,28 +23,28 @@ fn parseArgs(allocator: std.mem.Allocator) !File {
     errdefer allocator.free(data);
 
     return File{
-        .name = allocator.dupeZ(u8, name),
+        .name = try allocator.dupeZ(u8, name),
         .data = data,
     };
 }
 
 pub fn main() !void {
-    // var stdout = std.fs.File.stdout().writer(&.{});
-    // const w = &stdout.interface;
-    // try w.print("Hello world {any}\n", .{@typeInfo(@TypeOf(main))});
     const allocator = std.heap.smp_allocator;
+    // var debug_alloc = std.heap.DebugAllocator(.{}).init;
+    // defer _ = debug_alloc.deinit();
+    // const allocator = debug_alloc.allocator();
     var pool = ObjectPool.init(allocator);
     defer pool.deinit();
 
     var diag = lola.compiler.Diagnostics.init(allocator);
     defer {
         for (diag.messages.items) |msg| {
-            std.debug.print("{f}\n", msg);
+            std.debug.print("{f}\n", .{msg});
         }
         diag.deinit();
     }
 
-    const file = try parseArgs();
+    const file = try parseArgs(allocator);
     defer allocator.free(file.name);
     defer allocator.free(file.data);
 
@@ -54,18 +54,18 @@ pub fn main() !void {
     var env = try lola.runtime.Environment.init(allocator, &cu, pool.interface());
     defer env.deinit();
 
-    env.installModule(lola.libs.runtime, .null_pointer);
-    env.installModule(lola.libs.std, .null_pointer);
-    env.installModule(rl.lola_module, .null_pointer);
+    try env.installModule(lola.libs.runtime, .null_pointer);
+    try env.installModule(lola.libs.std, .null_pointer);
+    try env.installModule(rl.lola_module, .null_pointer);
 
     var vm = try lola.runtime.VM.init(allocator, &env);
     defer vm.deinit();
 
     while (true) {
-        const res = try vm.execute(1024);
+        const res = try vm.execute(4096);
         pool.clearUsageCounters();
-        pool.walkEnvironment(env);
-        pool.walkVM(vm);
+        try pool.walkEnvironment(env);
+        try pool.walkVM(vm);
         pool.collectGarbage();
         switch (res) {
             .exhausted => {},
